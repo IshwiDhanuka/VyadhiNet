@@ -1,14 +1,22 @@
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`
-
 export async function callGemini(prompt: string): Promise<string> {
-  const res = await fetch(GEMINI_URL, {
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
+    },
     body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.2 }
+      model: 'llama-3.3-70b-versatile',
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.2
     })
   })
   const data = await res.json()
-  return data.candidates[0].content.parts[0].text
+  
+  if (!data.choices || data.choices.length === 0) {
+    console.error('Groq error:', data)
+    throw new Error(data.error?.message || 'Groq returned no response')
+  }
+  
+  return data.choices[0].message.content
 }
