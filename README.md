@@ -16,6 +16,12 @@ VyadhiNet digitises and automates the grassroots disease surveillance pipeline f
 
 ---
 
+## 🌐 Live Deployment
+
+- **Production (Vercel):** https://vyadhi-ed1c3tsj7-ishwidhanukas-projects.vercel.app/
+---
+
+
 ## The Problem
 
 Rural India's 640,000+ ASHA workers still manually fill paper forms when patients present symptoms. By the time this data percolates to district health officers through bureaucratic channels, outbreaks are already spreading unchecked. The delay between symptom appearance and institutional response costs lives.
