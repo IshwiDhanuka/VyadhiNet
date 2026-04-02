@@ -4,23 +4,36 @@ import { getDiseaseBaseline } from './fetchers/dataGovIn'
 
 // WHO / IDSP / NVBDCP-grounded disease thresholds
 export const THRESHOLDS: Record<string, { cases: number; villages: number; level: 'RED' | 'AMBER'; source: string }> = {
-  'covid-19':        { cases: 5,  villages: 2, level: 'RED',   source: 'WHO Epidemic Threshold' },
-  covid:             { cases: 5,  villages: 2, level: 'RED',   source: 'WHO Epidemic Threshold' },
-  dengue:            { cases: 10, villages: 1, level: 'AMBER', source: 'IDSP P-Form Trigger' },
-  malaria:           { cases: 3,  villages: 1, level: 'RED',   source: 'NVBDCP Alert Criteria' },
-  cholera:           { cases: 2,  villages: 1, level: 'RED',   source: 'WHO — any cluster = alert' },
-  tuberculosis:      { cases: 3,  villages: 2, level: 'AMBER', source: 'RNTCP Cluster Definition' },
-  tb:                { cases: 3,  villages: 2, level: 'AMBER', source: 'RNTCP Cluster Definition' },
-  typhoid:           { cases: 8,  villages: 1, level: 'AMBER', source: 'IDSP S-Form Threshold' },
-  measles:           { cases: 5,  villages: 1, level: 'RED',   source: 'WHO SEARO Alert Criteria' },
-  chikungunya:       { cases: 15, villages: 2, level: 'AMBER', source: 'NVBDCP State Alert Level' },
-  'hepatitis a':     { cases: 6,  villages: 1, level: 'AMBER', source: 'IDSP Standard Definition' },
-  'hepatitis e':     { cases: 6,  villages: 1, level: 'AMBER', source: 'IDSP Standard Definition' },
-  'acute diarrhea':  { cases: 15, villages: 1, level: 'AMBER', source: 'IDSP Standard Definition' },
+  'covid-19':                    { cases: 5,  villages: 1, level: 'RED',   source: 'WHO Epidemic Threshold' },
+  'covid':                       { cases: 5,  villages: 1, level: 'RED',   source: 'WHO Epidemic Threshold' },
+  'dengue':                      { cases: 10, villages: 1, level: 'AMBER', source: 'IDSP P-Form Trigger' },
+  'dengue fever':                { cases: 10, villages: 1, level: 'AMBER', source: 'IDSP P-Form Trigger' }, // ← ADD
+  'malaria':                     { cases: 3,  villages: 1, level: 'RED',   source: 'NVBDCP Alert Criteria' },
+  'cholera':                     { cases: 2,  villages: 1, level: 'RED',   source: 'WHO — any cluster = alert' },
+  'tuberculosis':                { cases: 3,  villages: 1, level: 'AMBER', source: 'RNTCP Cluster Definition' },
+  'tb':                          { cases: 3,  villages: 1, level: 'AMBER', source: 'RNTCP Cluster Definition' },
+  'typhoid':                     { cases: 8,  villages: 1, level: 'AMBER', source: 'IDSP S-Form Threshold' },
+  'measles':                     { cases: 5,  villages: 1, level: 'RED',   source: 'WHO SEARO Alert Criteria' },
+  'chikungunya':                 { cases: 15, villages: 1, level: 'AMBER', source: 'NVBDCP State Alert Level' },
+  'hepatitis a':                 { cases: 6,  villages: 1, level: 'AMBER', source: 'IDSP Standard Definition' },
+  'hepatitis e':                 { cases: 6,  villages: 1, level: 'AMBER', source: 'IDSP Standard Definition' },
+  'acute diarrhea':              { cases: 15, villages: 1, level: 'AMBER', source: 'IDSP Standard Definition' },
+  'acute respiratory infection': { cases: 10, villages: 1, level: 'AMBER', source: 'IDSP Standard Definition' }, // ← ADD
 }
 
 function normalizeDisease(name: string): string {
-  return (name || '').toLowerCase().trim()
+  const n = (name || '').toLowerCase().trim()
+  if (n.includes('dengue')) return 'dengue'
+  if (n.includes('covid') || n.includes('corona')) return 'covid-19'
+  if (n.includes('malaria')) return 'malaria'
+  if (n.includes('cholera')) return 'cholera'
+  if (n.includes('typhoid')) return 'typhoid'
+  if (n.includes('chikungunya')) return 'chikungunya'
+  if (n.includes('tuberculosis') || n === 'tb') return 'tuberculosis'
+  if (n.includes('measles')) return 'measles'
+  if (n.includes('respiratory')) return 'acute diarrhea'
+  if (n.includes('hepatitis')) return n.includes('e') ? 'hepatitis e' : 'hepatitis a'
+  return n
 }
 
 export interface OutbreakAlert {
@@ -146,7 +159,7 @@ export async function detectOutbreaks(district?: string): Promise<OutbreakAlert[
     try {
       await supabase
         .from('alerts')
-        .upsert([alertPayload], { onConflict: 'disease,district' })
+        .upsert([alertPayload], { onConflict: 'disease,village_name' })
     } catch (e) {
       console.error('Alert upsert error:', e)
     }

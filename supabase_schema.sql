@@ -88,3 +88,4 @@ create index if not exists idx_reports_district on reports(district);
 create index if not exists idx_reports_disease on reports(disease_ai_guess);
 create index if not exists idx_alerts_district on alerts(district);
 create index if not exists idx_alerts_risk on alerts(risk_level);
+create index if not exists idx_alerts_created_at on alerts(created_at desc);
