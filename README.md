@@ -18,7 +18,7 @@ VyadhiNet digitises and automates the grassroots disease surveillance pipeline f
 
 ## 🌐 Live Deployment
 
-- **Production (Vercel):** https://vyadhi-ed1c3tsj7-ishwidhanukas-projects.vercel.app/
+- **Production (Vercel):** https://vyadhi-net.vercel.app
 ---
 
 
