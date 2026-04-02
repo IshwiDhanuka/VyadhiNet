@@ -32,7 +32,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${geistMono.variable}`}>
+    <html lang="en" className={`${inter.variable} ${geistMono.variable}`} suppressHydrationWarning>
       <body className="min-h-screen flex flex-col">{children}</body>
     </html>
   );

@@ -111,7 +111,7 @@ export default function DashboardPage() {
     <div style={{ minHeight: '100vh', background: '#f1f5f9', fontFamily: 'Inter, system-ui, sans-serif' }}>
 
       {/* TOP NAV */}
-      <nav style={{ background: 'linear-gradient(90deg, #064e3b, #15803d)', color: 'white', padding: '0 1.5rem', height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100 }}>
+      <nav style={{ background: 'linear-gradient(90deg, #064e3b, #15803d)', color: 'white', padding: '0 1.5rem', height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 9999 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <Link href="/" style={{ textDecoration: 'none', color: 'white' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
