@@ -43,9 +43,19 @@ export async function getAdjacentVillages(
       signal: AbortSignal.timeout(8000),
     })
     const data = await res.json()
-    return data.elements
-      .filter((el: any) => el.lat && el.lon && el.tags?.name)
-      .map((el: any) => ({
+    interface OverpassElement {
+      lat: number
+      lon: number
+      tags: {
+        name: string
+        'is_in:district'?: string
+        'is_in:state'?: string
+        [key: string]: any
+      }
+    }
+    return (data.elements as OverpassElement[])
+      .filter(el => el.lat && el.lon && el.tags?.name)
+      .map(el => ({
         name:      el.tags.name,
         district:  el.tags['is_in:district'] || district,
         state:     el.tags['is_in:state'] || '',

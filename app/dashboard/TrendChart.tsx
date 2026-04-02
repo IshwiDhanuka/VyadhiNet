@@ -4,7 +4,19 @@ import { Chart, LineElement, PointElement, LinearScale, CategoryScale, Tooltip, 
 
 Chart.register(LineElement, PointElement, LinearScale, CategoryScale, Tooltip, Filler, LineController)
 
-interface Props { reports: any[] }
+interface Report {
+  id: string
+  village_name: string
+  lat: number
+  lng: number
+  disease_ai_guess?: string
+  patient_age: number
+  gender: string
+  severity_score: number
+  submitted_at: string
+}
+
+interface Props { reports: Report[] }
 
 export default function TrendChart({ reports }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -58,7 +70,7 @@ export default function TrendChart({ reports }: Props) {
             padding: 10,
             cornerRadius: 8,
             callbacks: {
-              label: ctx => ` ${ctx.parsed.y} reports`,
+              label: (ctx) => ` ${ctx.parsed.y} reports`,
             },
           },
         },

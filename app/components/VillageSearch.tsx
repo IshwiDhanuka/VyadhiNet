@@ -25,7 +25,12 @@ export default function VillageSearch({ onSelect }: Props) {
       { headers: { 'User-Agent': 'VyadhiNet/1.0' } }
     )
     const data = await res.json()
-    setResults(data.map((r: any) => ({
+    interface NominatimResult {
+      display_name: string
+      lat: string
+      lon: string
+    }
+    setResults((data as NominatimResult[]).map(r => ({
       displayName: r.display_name,
       lat: parseFloat(r.lat),
       lng: parseFloat(r.lon)

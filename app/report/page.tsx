@@ -242,11 +242,11 @@ export default function ReportPage() {
               <input
                 type="text"
                 value={query}
-                onChange={e => searchVillage(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => searchVillage(e.target.value)}
                 placeholder="Gaon ka naam likho..."
                 style={{ width: '100%', border: '2px solid #e2e8f0', borderRadius: 10, padding: '0.75rem 1rem', fontSize: '1rem', color: '#0f172a', outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.2s' }}
-                onFocus={e => (e.target.style.borderColor = '#16a34a')}
-                onBlur={e => (e.target.style.borderColor = '#e2e8f0')}
+                onFocus={(e: React.FocusEvent<HTMLInputElement>) => (e.target.style.borderColor = '#16a34a')}
+                onBlur={(e: React.FocusEvent<HTMLInputElement>) => (e.target.style.borderColor = '#e2e8f0')}
               />
               {loadingSearch && <div style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16, border: '2px solid #e2e8f0', borderTopColor: '#16a34a', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />}
             </div>

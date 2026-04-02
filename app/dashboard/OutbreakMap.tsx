@@ -106,7 +106,7 @@ export default function OutbreakMap({ reports, alerts }: Props) {
     if (!map) return
 
     // Remove existing layers (except tile)
-    map.eachLayer(layer => {
+    map.eachLayer((layer: L.Layer) => {
       if (layer instanceof L.Marker || layer instanceof L.Circle) map.removeLayer(layer)
     })
 

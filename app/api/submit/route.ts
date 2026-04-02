@@ -61,7 +61,16 @@ Location: ${village_name}, ${district}, ${state}
 Symptoms: ${raw_text}
 ${weatherContext}`
 
-  let aiData: any = {
+interface AIData {
+  disease_candidates: Array<{ name: string; probability: number; icd10_code: string }>
+  severity_score: number
+  normalized_symptoms: string[]
+  red_flags: string[]
+  urgency: 'immediate' | 'same_day' | 'monitor'
+  advice: string
+}
+
+  let aiData: AIData = {
     disease_candidates: [],
     severity_score: 1,
     normalized_symptoms: symptoms,

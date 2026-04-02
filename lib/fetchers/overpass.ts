@@ -13,7 +13,16 @@ export async function getPHCLocations(district: string) {
     body: query
   })
   const data = await res.json()
-  return data.elements.map((el: any) => ({
+  interface PHCElement {
+    lat: number
+    lon: number
+    tags?: {
+      name?: string
+      phone?: string
+      [key: string]: any
+    }
+  }
+  return (data.elements as PHCElement[]).map(el => ({
     name: el.tags?.name || 'Unknown PHC',
     lat: el.lat,
     lng: el.lon,

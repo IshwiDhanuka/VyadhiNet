@@ -53,7 +53,7 @@ export default function DiseasePieChart({ data }: Props) {
           },
           tooltip: {
             callbacks: {
-              label: (ctx) => ` ${ctx.label}: ${ctx.parsed} cases (${((ctx.parsed / total) * 100).toFixed(0)}%)`,
+              label: (ctx) => ` ${ctx.label}: ${ctx.parsed} cases (${((ctx.parsed as number / total) * 100).toFixed(0)}%)`,
             },
             backgroundColor: '#0f172a',
             titleFont: { size: 12 },
