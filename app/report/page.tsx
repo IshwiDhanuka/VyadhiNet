@@ -1,146 +1,342 @@
 'use client'
-import { useState } from 'react'
-import VillageSearch from '../components/VillageSearch'
+import { useState, useRef } from 'react'
+import Link from 'next/link'
+import { 
+  Thermometer, 
+  Settings, 
+  Waves, 
+  Droplets, 
+  Wind, 
+  Activity, 
+  Bone, 
+  RotateCw, 
+  Ambulance, 
+  AlertTriangle, 
+  CheckCircle,
+  Search,
+  User,
+  Calendar,
+  FileText,
+  ArrowRight,
+  ShieldAlert,
+  Flame,
+  Dna,
+  Eye,
+  Clock
+} from 'lucide-react'
 
 const SYMPTOMS = [
-  'Bukhaar (Fever)', 'Sar dard (Headache)', 'Ulti (Vomiting)',
-  'Dast (Diarrhea)', 'Khansi (Cough)', 'Sans lene mein takleef (Breathing difficulty)',
-  'Jodo mein dard (Joint pain)', 'Chakkar (Dizziness)', 'Pet dard (Stomach pain)',
-  'Skin rash', 'Aankhon mein dard (Eye pain)', 'Thakaan (Fatigue)'
+  { en: 'Fever', hi: 'Bukhaar', icon: <Thermometer size={18} /> },
+  { en: 'Headache', hi: 'Sar dard', icon: <Settings size={18} /> },
+  { en: 'Vomiting', hi: 'Ulti', icon: <Waves size={18} /> },
+  { en: 'Diarrhea', hi: 'Dast', icon: <Droplets size={18} /> },
+  { en: 'Cough', hi: 'Khansi', icon: <Wind size={18} /> },
+  { en: 'Breathing difficulty', hi: 'Sans mein takleef', icon: <Activity size={18} /> },
+  { en: 'Joint pain', hi: 'Jodo mein dard', icon: <Bone size={18} /> },
+  { en: 'Dizziness', hi: 'Chakkar', icon: <RotateCw size={18} /> },
+  { en: 'Stomach pain', hi: 'Pet dard', icon: <Activity size={18} /> },
+  { en: 'Skin rash', hi: 'Chhalte / Daane', icon: <ShieldAlert size={18} /> },
+  { en: 'Eye pain', hi: 'Aankh dard', icon: <Eye size={18} /> },
+  { en: 'Fatigue', hi: 'Bahut thakaan', icon: <Clock size={18} /> },
+  { en: 'High fever 104°F+', hi: 'Tej bukhaar', icon: <Flame size={18} /> },
+  { en: 'Body ache', hi: 'Badan dard', icon: <Dna size={18} /> },
+  { en: 'Chills / Shivering', hi: 'Kaanpna', icon: <Wind size={18} /> },
+  { en: 'Yellow eyes', hi: 'Peeli aankhein', icon: <AlertTriangle size={18} color="#eab308" /> },
 ]
 
+type Village = { displayName: string; lat: number; lng: number }
+
+function UrgencyBadge({ urgency }: { urgency: string }) {
+  const map: Record<string, { bg: string; color: string; border: string; label: string }> = {
+    immediate: { bg: '#fef2f2', color: '#dc2626', border: '#fecaca', label: '🚨 Immediate' },
+    same_day:  { bg: '#fffbeb', color: '#d97706', border: '#fde68a', label: '⚠️ Same Day' },
+    monitor:   { bg: '#f0fdf4', color: '#16a34a', border: '#bbf7d0', label: '✅ Monitor' },
+  }
+  const s = map[urgency] || map.monitor
+  return (
+    <span style={{ background: s.bg, color: s.color, border: `1px solid ${s.border}`, borderRadius: 99, padding: '3px 12px', fontSize: '0.8rem', fontWeight: 700 }}>{s.label}</span>
+  )
+}
+
 export default function ReportPage() {
-  const [village, setVillage] = useState<any>(null)
+  const [village, setVillage] = useState<Village | null>(null)
+  const [query, setQuery] = useState('')
+  const [suggestions, setSuggestions] = useState<Village[]>([])
+  const [loadingSearch, setLoadingSearch] = useState(false)
   const [age, setAge] = useState('')
+  const [gender, setGender] = useState('')
   const [selected, setSelected] = useState<string[]>([])
+  const [notes, setNotes] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [result, setResult] = useState<any>(null)
-  const [error, setError] = useState<string>('')
+  const [error, setError] = useState('')
+  const debounce = useRef<any>(null)
 
-  function toggleSymptom(s: string) {
-    setSelected(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s])
+  async function searchVillage(q: string) {
+    setQuery(q)
+    setSuggestions([])
+    if (q.length < 3) return
+    clearTimeout(debounce.current)
+    debounce.current = setTimeout(async () => {
+      setLoadingSearch(true)
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q + ', India')}&format=json&limit=6`,
+          { headers: { 'User-Agent': 'VyadhiNet/2.0' } }
+        )
+        const data = await res.json()
+        setSuggestions(data.map((r: any) => ({ displayName: r.display_name, lat: parseFloat(r.lat), lng: parseFloat(r.lon) })))
+      } catch { /* ignore */ }
+      setLoadingSearch(false)
+    }, 350)
+  }
+
+  function selectVillage(v: Village) {
+    setVillage(v)
+    setQuery(v.displayName.split(',')[0])
+    setSuggestions([])
+  }
+
+  function toggle(label: string) {
+    setSelected(p => p.includes(label) ? p.filter(x => x !== label) : [...p, label])
   }
 
   async function submit() {
     if (!village || !age || selected.length === 0) {
-      alert('Village, age aur kam se kam ek symptom bharein')
+      setError('Village, umar aur kam se kam ek symptom zaroor bharein ✋')
       return
     }
-    setSubmitting(true)
-    setError('')
+    setSubmitting(true); setError('')
     try {
-      const raw_text = `Patient age ${age}. Symptoms: ${selected.join(', ')}`
+      const parts = village.displayName.split(',')
+      const raw_text = `Patient ${gender || 'unknown gender'}, age ${age}. Symptoms: ${selected.join(', ')}. ${notes ? 'ASHA notes: ' + notes : ''}`
       const res = await fetch('/api/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          village_name: village.displayName.split(',')[0],
+          village_name: parts[0]?.trim(),
           lat: village.lat,
           lng: village.lng,
-          district: village.displayName.split(',')[1]?.trim() || '',
-          state: village.displayName.split(',')[2]?.trim() || '',
+          district: parts[1]?.trim() || '',
+          state: parts[2]?.trim() || '',
           patient_age: parseInt(age),
+          gender,
           symptoms: selected,
-          raw_text
-        })
+          raw_text,
+        }),
       })
-      const text = await res.text()
-      const data = JSON.parse(text)
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Server error')
       setResult(data.report)
-    } catch(e: any) {
-      setError(e.message)
-    }
+    } catch (e: any) { setError(e.message) }
     setSubmitting(false)
   }
 
-  if (result) return (
-    <div style={{minHeight:'100vh',background:'#f0fdf4',display:'flex',alignItems:'center',justifyContent:'center',padding:'1rem'}}>
-      <div style={{background:'white',borderRadius:'1rem',padding:'1.5rem',maxWidth:'400px',width:'100%',boxShadow:'0 4px 20px rgba(0,0,0,0.1)'}}>
-        <div style={{fontSize:'3rem',textAlign:'center',marginBottom:'1rem'}}>✅</div>
-        <h2 style={{fontSize:'1.25rem',fontWeight:'700',textAlign:'center',color:'#15803d',marginBottom:'1rem'}}>Report Submit Ho Gayi!</h2>
-        <div style={{background:'#f9fafb',borderRadius:'0.5rem',padding:'1rem',marginBottom:'1rem'}}>
-          <p style={{color:'#111827',marginBottom:'6px'}}><strong>AI Diagnosis:</strong> {result.disease_candidates?.[0]?.name || 'Analyzing...'}</p>
-          <p style={{color:'#111827',marginBottom:'6px'}}><strong>Confidence:</strong> {((result.disease_candidates?.[0]?.probability || 0) * 100).toFixed(0)}%</p>
-          <p style={{color:'#111827',marginBottom:'6px'}}><strong>Severity:</strong> {result.severity_score}/5</p>
-          <p style={{color:'#111827',marginBottom:'6px'}}><strong>Urgency:</strong> {result.urgency}</p>
-          {result.red_flags?.length > 0 && (
-            <p style={{color:'#dc2626',fontWeight:'600'}}>Red Flags: {result.red_flags.join(', ')}</p>
+  if (result) {
+    const top = result.disease_candidates?.[0]
+    return (
+      <div style={{ minHeight: '100vh', background: '#f0fdf4', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '1rem', fontFamily: 'Inter, system-ui, sans-serif' }}>
+        <div style={{ background: 'white', borderRadius: 20, padding: '2rem', maxWidth: 440, width: '100%', boxShadow: '0 12px 48px rgba(22,163,74,0.15)', border: '1px solid #bbf7d0' }}>
+          <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+            <div style={{ fontSize: 56, marginBottom: 8 }}>✅</div>
+            <h2 style={{ fontSize: '1.375rem', fontWeight: 800, color: '#15803d' }}>Report Submit Ho Gayi!</h2>
+            <p style={{ color: '#64748b', fontSize: '0.875rem', marginTop: 4 }}>AI ne analysis kar li — neeche dekho</p>
+          </div>
+
+          {top && (
+            <div style={{ background: '#f0fdf4', borderRadius: 12, padding: '1.25rem', marginBottom: '1rem', border: '1px solid #bbf7d0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                <div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, marginBottom: 2 }}>AI DIAGNOSIS</div>
+                  <div style={{ fontSize: '1.125rem', fontWeight: 800, color: '#0f172a' }}>{top.name}</div>
+                  <div style={{ fontSize: '0.75rem', color: '#16a34a', fontWeight: 600 }}>ICD-10: {top.icd10_code}</div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: 2 }}>Confidence</div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#15803d' }}>{((top.probability || 0) * 100).toFixed(0)}%</div>
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                <div style={{ background: 'white', borderRadius: 8, padding: '0.625rem', textAlign: 'center' }}>
+                  <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600 }}>SEVERITY</div>
+                  <div style={{ fontSize: '1.25rem', fontWeight: 900, color: result.severity_score >= 4 ? '#dc2626' : result.severity_score >= 3 ? '#d97706' : '#16a34a' }}>{result.severity_score}/5</div>
+                </div>
+                <div style={{ background: 'white', borderRadius: 8, padding: '0.625rem', textAlign: 'center' }}>
+                  <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600 }}>URGENCY</div>
+                  <div style={{ marginTop: 4 }}><UrgencyBadge urgency={result.urgency} /></div>
+                </div>
+              </div>
+            </div>
           )}
+
+          {result.disease_candidates?.length > 1 && (
+            <div style={{ marginBottom: '1rem' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', marginBottom: 6 }}>OTHER POSSIBILITIES</div>
+              {result.disease_candidates.slice(1, 3).map((d: any) => (
+                <div key={d.name} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 10px', background: '#f8fafc', borderRadius: 8, marginBottom: 4, fontSize: '0.875rem' }}>
+                  <span style={{ color: '#374151' }}>{d.name}</span>
+                  <span style={{ color: '#64748b', fontWeight: 600 }}>{((d.probability || 0) * 100).toFixed(0)}%</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {result.red_flags?.length > 0 && (
+            <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: '0.875rem', marginBottom: '1rem' }}>
+              <div style={{ fontWeight: 700, color: '#dc2626', fontSize: '0.875rem', marginBottom: 4 }}>🚨 Red Flags</div>
+              <ul style={{ margin: 0, paddingLeft: 16 }}>
+                {result.red_flags.map((f: string) => <li key={f} style={{ color: '#dc2626', fontSize: '0.8125rem' }}>{f}</li>)}
+              </ul>
+            </div>
+          )}
+
+          {result.normalized_symptoms?.length > 0 && (
+            <div style={{ marginBottom: '1rem' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', marginBottom: 6 }}>NORMALIZED SYMPTOMS</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                {result.normalized_symptoms.map((s: string) => (
+                  <span key={s} style={{ background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', borderRadius: 99, padding: '2px 10px', fontSize: '0.75rem', fontWeight: 600 }}>{s}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <button onClick={() => { setResult(null); setSelected([]); setAge(''); setGender(''); setNotes(''); setVillage(null); setQuery('') }}
+            style={{ width: '100%', background: '#16a34a', color: 'white', border: 'none', borderRadius: 10, padding: '0.875rem', fontWeight: 700, fontSize: '1rem', cursor: 'pointer' }}>
+            + Nayi Report Bharein
+          </button>
+          <div style={{ textAlign: 'center', marginTop: 12 }}>
+            <Link href="/dashboard" style={{ color: '#16a34a', fontSize: '0.875rem', fontWeight: 600, textDecoration: 'none' }}>📡 Dashboard dekhein →</Link>
+          </div>
         </div>
-        <button onClick={() => setResult(null)} style={{width:'100%',background:'#16a34a',color:'white',borderRadius:'0.5rem',padding:'0.75rem',fontWeight:'600',border:'none',cursor:'pointer',fontSize:'1rem'}}>
-          Nayi Report Bharein
-        </button>
       </div>
-    </div>
-  )
+    )
+  }
 
   return (
-    <div style={{minHeight:'100vh',background:'#f3f4f6',padding:'1rem'}}>
-      <div style={{maxWidth:'420px',margin:'0 auto'}}>
-        <div style={{background:'#16a34a',color:'white',borderRadius:'1rem',padding:'1.25rem',marginBottom:'1.5rem'}}>
-          <h1 style={{fontSize:'1.25rem',fontWeight:'700',margin:0}}>VyadhiNet</h1>
-          <p style={{color:'#bbf7d0',fontSize:'0.875rem',margin:'4px 0 0'}}>ASHA Worker Report Form</p>
+    <div style={{ minHeight: '100vh', background: '#f3f4f6', fontFamily: 'Inter, system-ui, sans-serif' }}>
+      {/* Header */}
+      <div style={{ background: 'linear-gradient(135deg, #064e3b, #16a34a)', color: 'white', padding: '1.25rem 1rem' }}>
+        <div style={{ maxWidth: 480, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <h1 style={{ fontWeight: 900, fontSize: '1.375rem', margin: 0 }}>VyadhiNet</h1>
+            <p style={{ color: '#bbf7d0', fontSize: '0.8125rem', marginTop: 2 }}>ASHA Worker Report Form</p>
+          </div>
+          <Link href="/dashboard" style={{ textDecoration: 'none', background: 'rgba(255,255,255,0.18)', color: 'white', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 8, padding: '7px 14px', fontSize: '0.8125rem', fontWeight: 600 }}>📡 Dashboard</Link>
         </div>
+      </div>
 
+      <div style={{ maxWidth: 480, margin: '0 auto', padding: '1.25rem 1rem' }}>
         {error && (
-          <div style={{background:'#fef2f2',border:'1px solid #fecaca',borderRadius:'0.75rem',padding:'0.75rem',marginBottom:'1rem',color:'#dc2626',fontSize:'0.875rem'}}>
-            Error: {error}
+          <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: '0.875rem', marginBottom: '1rem', color: '#dc2626', fontSize: '0.875rem', fontWeight: 500 }}>
+            {error}
           </div>
         )}
 
-        <div style={{display:'flex',flexDirection:'column',gap:'1rem'}}>
-          <div style={{background:'white',borderRadius:'0.75rem',padding:'1rem',border:'1px solid #d1d5db'}}>
-            <label style={{display:'block',fontSize:'0.875rem',fontWeight:'700',color:'#111827',marginBottom:'0.5rem'}}>Village / Gaon</label>
-            <VillageSearch onSelect={setVillage} />
-            {village && <p style={{fontSize:'0.75rem',color:'#16a34a',marginTop:'0.5rem',fontWeight:'600'}}>✓ {village.displayName.split(',')[0]}</p>}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+
+          {/* Village Search */}
+          <div style={{ background: 'white', borderRadius: 14, padding: '1.125rem', border: '1px solid #e2e8f0', boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
+            <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.5rem' }}>📍 Village / Gaon</label>
+            <div style={{ position: 'relative' }}>
+              <input
+                type="text"
+                value={query}
+                onChange={e => searchVillage(e.target.value)}
+                placeholder="Gaon ka naam likho..."
+                style={{ width: '100%', border: '2px solid #e2e8f0', borderRadius: 10, padding: '0.75rem 1rem', fontSize: '1rem', color: '#0f172a', outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.2s' }}
+                onFocus={e => (e.target.style.borderColor = '#16a34a')}
+                onBlur={e => (e.target.style.borderColor = '#e2e8f0')}
+              />
+              {loadingSearch && <div style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16, border: '2px solid #e2e8f0', borderTopColor: '#16a34a', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />}
+            </div>
+            {suggestions.length > 0 && (
+              <ul style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 10, marginTop: 4, boxShadow: '0 4px 16px rgba(0,0,0,0.1)', listStyle: 'none', padding: 0, maxHeight: 220, overflowY: 'auto' }}>
+                {suggestions.map((s, i) => (
+                  <li key={i} onClick={() => selectVillage(s)}
+                    style={{ padding: '0.625rem 1rem', cursor: 'pointer', fontSize: '0.875rem', color: '#374151', borderBottom: '1px solid #f1f5f9', transition: 'background 0.15s' }}
+                    onMouseEnter={e => (e.currentTarget.style.background = '#f0fdf4')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'white')}>
+                    📍 {s.displayName}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {village && <p style={{ fontSize: '0.75rem', color: '#16a34a', marginTop: 6, fontWeight: 600 }}>✓ {village.displayName.split(',').slice(0, 3).join(',')}</p>}
           </div>
 
-          <div style={{background:'white',borderRadius:'0.75rem',padding:'1rem',border:'1px solid #d1d5db'}}>
-            <label style={{display:'block',fontSize:'0.875rem',fontWeight:'700',color:'#111827',marginBottom:'0.5rem'}}>Patient Ki Umar (Age)</label>
-            <input
-              type="number"
-              value={age}
-              onChange={e => setAge(e.target.value)}
-              placeholder="Age in years"
-              style={{width:'100%',border:'2px solid #d1d5db',borderRadius:'0.5rem',padding:'0.75rem',fontSize:'1rem',color:'#111827',outline:'none',boxSizing:'border-box'}}
-            />
-          </div>
-
-          <div style={{background:'white',borderRadius:'0.75rem',padding:'1rem',border:'1px solid #d1d5db'}}>
-            <label style={{display:'block',fontSize:'0.875rem',fontWeight:'700',color:'#111827',marginBottom:'0.75rem'}}>Symptoms (jo bhi ho select karein)</label>
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.5rem'}}>
-              {SYMPTOMS.map(s => (
-                <button
-                  key={s}
-                  onClick={() => toggleSymptom(s)}
-                  style={{
-                    fontSize:'0.75rem',
-                    padding:'0.5rem',
-                    borderRadius:'0.5rem',
-                    border: selected.includes(s) ? '2px solid #16a34a' : '2px solid #d1d5db',
-                    background: selected.includes(s) ? '#16a34a' : 'white',
-                    color: selected.includes(s) ? 'white' : '#111827',
-                    textAlign:'left',
-                    cursor:'pointer',
-                    fontWeight:'500',
-                    lineHeight:'1.3'
-                  }}
-                >
-                  {s}
-                </button>
-              ))}
+          {/* Age + Gender */}
+          <div style={{ background: 'white', borderRadius: 14, padding: '1.125rem', border: '1px solid #e2e8f0', boxShadow: '0 1px 4px rgba(0,0,0,0.05)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.5rem' }}>🎂 Umar (Age)</label>
+              <input type="number" value={age} onChange={e => setAge(e.target.value)} placeholder="Years"
+                style={{ width: '100%', border: '2px solid #e2e8f0', borderRadius: 10, padding: '0.75rem 1rem', fontSize: '1rem', color: '#0f172a', outline: 'none', boxSizing: 'border-box' }}
+                onFocus={e => (e.target.style.borderColor = '#16a34a')}
+                onBlur={e => (e.target.style.borderColor = '#e2e8f0')} />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.5rem' }}>👤 Ling (Gender)</label>
+              <select value={gender} onChange={e => setGender(e.target.value)}
+                style={{ width: '100%', border: '2px solid #e2e8f0', borderRadius: 10, padding: '0.75rem 1rem', fontSize: '1rem', color: '#0f172a', outline: 'none', boxSizing: 'border-box', background: 'white' }}
+                onFocus={e => (e.target.style.borderColor = '#16a34a')}
+                onBlur={e => (e.target.style.borderColor = '#e2e8f0')}>
+                <option value="">Select</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
             </div>
           </div>
 
-          <button
-            onClick={submit}
-            disabled={submitting}
-            style={{width:'100%',background:submitting?'#86efac':'#16a34a',color:'white',borderRadius:'0.75rem',padding:'1rem',fontWeight:'700',fontSize:'1.125rem',border:'none',cursor:submitting?'not-allowed':'pointer'}}
-          >
-            {submitting ? 'AI Analyze Kar Raha Hai...' : 'Report Submit Karein'}
+          {/* Symptoms */}
+          <div style={{ background: 'white', borderRadius: 14, padding: '1.125rem', border: '1px solid #e2e8f0', boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
+            <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#0f172a', marginBottom: 4 }}>🤒 Symptoms (jo bhi ho, sab select karein)</label>
+            <p style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.75rem' }}>{selected.length} selected</p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+              {SYMPTOMS.map(s => {
+                const label = `${s.en}`
+                const active = selected.includes(label)
+                return (
+                  <button key={label} type="button" onClick={() => toggle(label)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 10, padding: '0.75rem', borderRadius: 12, border: '1.5px solid',
+                      borderColor: active ? '#16a34a' : '#e2e8f0',
+                      background: active ? '#f0fdf4' : 'white',
+                      color: active ? '#15803d' : '#475569',
+                      textAlign: 'left', cursor: 'pointer', transition: 'all 0.2s', outline: 'none'
+                    }}>
+                    <div style={{ color: active ? '#16a34a' : '#94a3b8' }}>{s.icon}</div>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: '0.8rem' }}>{s.hi}</div>
+                      <div style={{ fontSize: '0.65rem', opacity: 0.7 }}>{s.en}</div>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* ASHA Notes */}
+          <div style={{ background: 'white', borderRadius: 14, padding: '1.125rem', border: '1px solid #e2e8f0', boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
+            <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.5rem' }}>📝 ASHA Notes (optional)</label>
+            <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Koi extra jaankari... (kitne din se hai, etc.)" rows={3}
+              style={{ width: '100%', border: '2px solid #e2e8f0', borderRadius: 10, padding: '0.75rem 1rem', fontSize: '0.9375rem', color: '#0f172a', outline: 'none', boxSizing: 'border-box', resize: 'vertical', fontFamily: 'inherit' }}
+              onFocus={e => (e.target.style.borderColor = '#16a34a')}
+              onBlur={e => (e.target.style.borderColor = '#e2e8f0')} />
+          </div>
+
+          {/* Submit */}
+          <button onClick={submit} disabled={submitting}
+            style={{ width: '100%', background: submitting ? '#86efac' : 'linear-gradient(135deg, #16a34a, #15803d)', color: 'white', borderRadius: 12, padding: '1rem', fontWeight: 800, fontSize: '1.0625rem', border: 'none', cursor: submitting ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: submitting ? 'none' : '0 4px 16px rgba(22,163,74,0.4)' }}>
+            {submitting ? (
+              <><div style={{ width: 18, height: 18, border: '3px solid rgba(255,255,255,0.3)', borderTopColor: 'white', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} /> AI Analyze Kar Raha Hai...</>
+            ) : '🚀 Report Submit Karein'}
           </button>
+
+          <p style={{ textAlign: 'center', fontSize: '0.75rem', color: '#94a3b8' }}>Reports securely stored in Supabase · AI powered by Groq LLaMA 3.3</p>
         </div>
       </div>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   )
 }
