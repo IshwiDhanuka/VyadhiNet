@@ -168,39 +168,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* API TABLE */}
-      <section style={{ padding: '80px 1.5rem', maxWidth: 1100, margin: '0 auto' }}>
-        <div style={{ textAlign: 'center', marginBottom: 40 }}>
-          <h2 style={{ fontSize: 'clamp(1.4rem, 2.5vw, 2rem)', fontWeight: 800, color: '#0f172a' }}>Real-World Data Architecture</h2>
-          <p style={{ color: '#64748b', marginTop: 8 }}>Every data point comes from a live API or real user submission.</p>
-        </div>
-        <div style={{ overflowX: 'auto', borderRadius: 14, border: '1px solid #e2e8f0', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', background: 'white', fontSize: '0.875rem' }}>
-            <thead>
-              <tr style={{ background: 'linear-gradient(90deg, #064e3b, #15803d)', color: 'white' }}>
-                {['API / Source', 'Provider', 'What It Returns', 'Used For'].map(h => (
-                  <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 700, fontSize: '0.8125rem', letterSpacing: '0.04em' }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {[
-                ['data.gov.in', 'NIC / MoHFW', 'District-wise disease case counts (dengue, malaria, TB, cholera)', 'Baseline disease burden overlay on dashboard'],
-                ['Nominatim (OSM)', 'OpenStreetMap Foundation', 'Lat/lng, district boundaries for any Indian village', 'Place villages on Leaflet map with real coordinates'],
-                ['Overpass API', 'OpenStreetMap Foundation', 'Real PHC, hospital, clinic locations in any district', 'Nearest PHC routing for alerts'],
-                ['Open-Meteo', 'Open-Meteo', 'Real-time rainfall, temperature, humidity', 'Weather overlay for vector disease risk (dengue/malaria)'],
-                ['IDSP Scraper', 'NCDC India', 'Weekly P/L/S outbreak reports nationally', 'Active outbreak feed, alert baseline'],
-              ].map((row, i) => (
-                <tr key={i} style={{ borderTop: '1px solid #f1f5f9', background: i % 2 === 0 ? 'white' : '#fafafa' }}>
-                  {row.map((cell, j) => (
-                    <td key={j} style={{ padding: '12px 16px', color: j === 0 ? '#15803d' : '#374151', fontWeight: j === 0 ? 700 : 400, lineHeight: 1.5 }}>{cell}</td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
 
       {/* CTA */}
       <section style={{ background: 'linear-gradient(135deg, #064e3b 0%, #15803d 100%)', padding: '80px 1.5rem', textAlign: 'center', color: 'white' }}>
