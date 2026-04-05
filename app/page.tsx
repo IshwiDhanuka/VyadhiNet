@@ -218,13 +218,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* FOOTER */}
-      <footer style={{ background: '#0f172a', color: '#94a3b8', padding: '24px 1.5rem', textAlign: 'center' }}>
-        <p style={{ fontSize: '0.8125rem' }}>
-          <strong style={{ color: '#f1f5f9' }}>VyadhiNet v2.0</strong> · CODECURE, SPIRIT 2026 · IIT (BHU) Varanasi ·
-          Built with 5 live APIs &amp; zero mock data
-        </p>
-      </footer>
+
     </div>
   )
 }
